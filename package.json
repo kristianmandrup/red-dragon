@@ -26,7 +26,7 @@
   "author": "Kristian Mandrup <kmandrup@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "chevrotain": "SAP/chevrotain#master"
+    "chevrotain": "0.27.3"
   },
   "devDependencies": {
     "ava": "^0.18.2",
