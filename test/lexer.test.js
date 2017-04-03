@@ -1,5 +1,5 @@
 import test from 'ava'
-import '../src/lexer'
+import '../lib/lexer'
 
 test('lexer', t => {
   t.pass()

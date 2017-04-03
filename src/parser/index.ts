@@ -37,7 +37,7 @@ import {
   LessThan
 } from '../lexer'
 
-class SelectParser extends chevrotain.Parser {
+export class SelectParser extends Parser {
 
   constructor(input: Token[]) {
     super(input, allTokens)

@@ -42,7 +42,7 @@ export class WhiteSpace extends Token {
 }
 
 export const allTokens = [WhiteSpace, Select, From, Where, Comma, Identifier, Integer, GreaterThan, LessThan]
-let SelectLexer = new Lexer(allTokens);
+export const SelectLexer = new Lexer(allTokens);
 
 let inputText = "SELECT column1 FROM table2"
 let lexingResult = SelectLexer.tokenize(inputText)
