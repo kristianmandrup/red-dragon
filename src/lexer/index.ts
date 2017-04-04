@@ -1,4 +1,3 @@
-import API from 'chevrotain'
 import {
   Token,
   Lexer

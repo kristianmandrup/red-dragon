@@ -20,77 +20,77 @@
 //    : ">" | "<"
 
 import {
-  Token,
-  Parser
+    Token,
+    Parser
 } from 'chevrotain'
 
 import {
-  allTokens,
-  WhiteSpace,
-  Select,
-  From,
-  Where,
-  Comma,
-  Identifier,
-  Integer,
-  GreaterThan,
-  LessThan
+    allTokens,
+    WhiteSpace,
+    Select,
+    From,
+    Where,
+    Comma,
+    Identifier,
+    Integer,
+    GreaterThan,
+    LessThan
 } from '../lexer'
 
 export class SelectParser extends Parser {
 
-  constructor(input: Token[]) {
-    super(input, allTokens)
+    constructor(input: Token[]) {
+        super(input, allTokens)
+        // must be called at the end of the constructor!
+        Parser.performSelfAnalysis(this)
+    }
 
-    let $ = this
-
-    $.RULE("selectStatement", () => {
-      $.SUBRULE($.selectClause)
-      $.SUBRULE($.fromClause)
-      $.OPTION(() => {
-        $.SUBRULE($.whereClause)
-      })
+    selectStatement = this.RULE("selectStatement", () => {
+        this.SUBRULE(this.selectClause)
+        this.SUBRULE(this.fromClause)
+        this.OPTION(() => {
+            this.SUBRULE(this.whereClause)
+        })
     })
 
-    $.RULE("selectClause", () => {
-      $.CONSUME(Select)
-      $.AT_LEAST_ONE_SEP(Comma, () => {
-        $.CONSUME(Identifier)
-      })
+    selectClause = this.RULE("selectClause", () => {
+        this.CONSUME(Select)
+        this.AT_LEAST_ONE_SEP({
+            SEP: Comma, DEF: () => {
+                this.CONSUME(Identifier)
+            }
+        })
     })
 
-    $.RULE("fromClause", () => {
-      $.CONSUME(From)
-      $.CONSUME(Identifier)
+    fromClause = this.RULE("fromClause", () => {
+        this.CONSUME(From)
+        this.CONSUME(Identifier)
     })
 
-    $.RULE("whereClause", () => {
-      $.CONSUME(Where)
-      $.SUBRULE($.expression)
+    whereClause = this.RULE("whereClause", () => {
+        this.CONSUME(Where)
+        this.SUBRULE(this.expression)
     })
 
-    $.RULE("expression", () => {
-      $.SUBRULE($.atomicExpression)
-      $.SUBRULE($.relationalOperator)
-      $.SUBRULE2($.atomicExpression) // note the '2' suffix to distinguish
-      // from the 'SUBRULE(atomicExpression)'
-      // 2 lines above.
+    expression = this.RULE("expression", () => {
+        this.SUBRULE(this.atomicExpression)
+        this.SUBRULE(this.relationalOperator)
+        this.SUBRULE2(this.atomicExpression) // note the '2' suffix to distinguish
+        // from the 'SUBRULE(atomicExpression)'
+        // 2 lines above.
     })
 
-    $.RULE("atomicExpression", () => {
-      $.OR([
-        { ALT: () => { $.CONSUME(Integer) } },
-        { ALT: () => { $.CONSUME(Identifier) } }
-      ]);
+    atomicExpression = this.RULE("atomicExpression", () => {
+        this.OR([
+            {ALT: () => { this.CONSUME(Integer) }},
+            {ALT: () => { this.CONSUME(Identifier) }}
+        ]);
     })
 
-    $.RULE("relationalOperator", () => {
-      return $.OR([
-        { ALT: function () { $.CONSUME(GreaterThan) } },
-        { ALT: function () { $.CONSUME(LessThan) } }
-      ]);
+    relationalOperator = this.RULE("relationalOperator", () => {
+        return this.OR([
+            {ALT: function () { this.CONSUME(GreaterThan) }},
+            {ALT: function () { this.CONSUME(LessThan) }}
+        ]);
     });
-
-    Parser.performSelfAnalysis(this)
-  }
 }
