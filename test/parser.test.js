@@ -18,8 +18,8 @@ function parseInput(text) {
 }
 
 test('parser', t => {
-  let inputText = "SELECT column1 FROM table2"
-  parseInput(inputText)
+  // let inputText = "SELECT column1 FROM table2"
+  // parseInput(inputText)
 
   t.pass()
 })
