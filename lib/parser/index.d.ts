@@ -2,11 +2,11 @@ import { Token, Parser } from 'chevrotain';
 export declare class SelectParser extends Parser {
     registry: {};
     constructor(input: Token[]);
-    selectClause: Function;
-    selectStatement: Function;
-    fromClause: Function;
-    whereClause: Function;
-    atomicExpression: Function;
-    relationalOperator: Function;
-    expression: Function;
+    selectStatement: (idxInCallingRule?: number, ...args: any[]) => any;
+    selectClause: (idxInCallingRule?: number, ...args: any[]) => any;
+    fromClause: (idxInCallingRule?: number, ...args: any[]) => any;
+    whereClause: (idxInCallingRule?: number, ...args: any[]) => any;
+    relationalOperator: (idxInCallingRule?: number, ...args: any[]) => any;
+    expression: (idxInCallingRule?: number, ...args: any[]) => any;
+    atomicExpression: (idxInCallingRule?: number, ...args: any[]) => any;
 }

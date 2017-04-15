@@ -1,5 +1,6 @@
 import {
-  Parser
+  Parser,
+  Token
 } from 'chevrotain'
 
 export class RuleParser {
@@ -16,12 +17,20 @@ export class RuleParser {
     this._registry = parser.registry || options.registry || RuleParser.registry
   }
 
-  parse(rule) {
+  parse(rule, options = {}) {
     if (Array.isArray(rule)) {
-      return this.parseList(rule)
+      return this.parseList(rule, options)
     }
+    if (rule.prototype instanceof Token) {
+      return this.consume(rule)
+    }
+
     if (typeof rule === 'object') {
-      return this.parseObj(rule)
+      return this.parseObj(rule, options)
+    }
+    // if string, always assume subrule
+    if (typeof rule === 'string') {
+      return this.subrule(rule)
     }
     if (typeof rule === 'function') {
       return rule
@@ -29,15 +38,33 @@ export class RuleParser {
     throw new Error(`Invalid rule(s) ${typeof rule}`)
   }
 
-  parseList(rules) {
+  parseList(rules, options = {}) {
     return () => {
-      rules.map(rule => this.parse(rule))
+      rules.map(rule => this.parse(rule, options))
     }
   }
 
-  parseObj(rule) {
+  parseObj(rule, options = {}) {
+    function isRepeat(value) {
+      return value.repeat || value.sep || value.min || value.def
+    }
+    function isAlt(value) {
+      return value && value.parent === 'or'
+    }
+
     let key = Object.keys(rule)[0]
     let value = rule[key]
+
+    if (typeof value === 'object') {
+      if (isAlt(options)) {
+        return this.alt(value)
+      }
+
+      if (isRepeat(value)) {
+        return this.repeat(value)
+      }
+    }
+
     switch (key) {
       case 'rule':
         return this.subrule(value)
@@ -92,12 +119,13 @@ export class RuleParser {
     return this.$[fun](rule)
   }
 
+  // must be a Token
   consume(value) {
     return this.$.CONSUME(value)
   }
 
   alt(value) {
-    return { ALT: this.parseObj(value) }
+    return { ALT: this.parse(value) }
   }
 
   repeat(value) {
@@ -118,7 +146,7 @@ export class RuleParser {
   }
 
   or(alternatives) {
-    return this.parseList(alternatives)
+    return this.parseList(alternatives, { parent: 'or' })
   }
 
   option(value) {
@@ -126,7 +154,8 @@ export class RuleParser {
     if (typeof rule !== 'function') {
       throw new Error(`option must be function, was ${typeof rule}`)
     }
-    this.$.OPTION(rule)
+    let parsedRule = this.parse(rule)
+    this.$.OPTION(parsedRule)
   }
 
   rule(name, rules) {

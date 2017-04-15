@@ -8,9 +8,9 @@ export declare class RuleParser {
         logging: boolean;
         registry: any;
     });
-    parse(rule: any): any;
-    parseList(rules: any): () => void;
-    parseObj(rule: any): any;
+    parse(rule: any, options?: {}): any;
+    parseList(rules: any, options?: {}): () => void;
+    parseObj(rule: any, options?: {}): any;
     log(msg: any, ...args: any[]): void;
     findRule(name: any): any;
     readonly registry: {};
