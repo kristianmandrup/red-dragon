@@ -53,11 +53,12 @@ export class RuleParser {
 
   protected parseList(rules, options = {}): IResult {
     this.log('parseList', rules, options)
+    let parsedRules = rules.map(rule => this.parse(rule, options))
     return {
       rule: () => {
-        rules.map(rule => this.parse(rule, options).rule)
+        parsedRules.map(pr => pr.rule)
       },
-      code: '[' + rules.map(rule => this.parse(rule, options).code).join(',') + ']'
+      code: '() => {' + parsedRules.map(pr => pr.code).join('\n') + '}'
     }
   }
 
