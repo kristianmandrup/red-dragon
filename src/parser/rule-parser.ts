@@ -3,6 +3,10 @@ import {
   Token
 } from 'chevrotain'
 
+import {
+  Identifier,
+} from '../lexer'
+
 export class RuleParser {
   static registry = {}
   usedRules = {}
@@ -18,10 +22,13 @@ export class RuleParser {
   }
 
   parse(rule, options = {}) {
+    this.log('parse', rule, options)
+
     if (Array.isArray(rule)) {
       return this.parseList(rule, options)
     }
     if (rule.prototype instanceof Token) {
+      this.log('consume since rule is token', rule)
       return this.consume(rule)
     }
 
@@ -39,12 +46,15 @@ export class RuleParser {
   }
 
   parseList(rules, options = {}) {
+    this.log('parseList', rules, options)
     return () => {
       rules.map(rule => this.parse(rule, options))
     }
   }
 
   parseObj(rule, options = {}) {
+    this.log('parseObj', rule, options)
+
     function isRepeat(value) {
       return value.repeat || value.sep || value.min || value.def
     }
@@ -52,18 +62,16 @@ export class RuleParser {
       return value && value.parent === 'or'
     }
 
+    if (isAlt(options)) {
+      return this.alt(rule)
+    }
+
+    if (isRepeat(rule)) {
+      return this.repeat(rule)
+    }
+
     let key = Object.keys(rule)[0]
     let value = rule[key]
-
-    if (typeof value === 'object') {
-      if (isAlt(options)) {
-        return this.alt(value)
-      }
-
-      if (isRepeat(value)) {
-        return this.repeat(value)
-      }
-    }
 
     switch (key) {
       case 'rule':
@@ -121,14 +129,17 @@ export class RuleParser {
 
   // must be a Token
   consume(value) {
+    this.log('consume', value)
     return this.$.CONSUME(value)
   }
 
   alt(value) {
+    this.log('alt', value)
     return { ALT: this.parse(value) }
   }
 
   repeat(value) {
+    this.log('repeat', value)
     let rule = {
       SEP: '',
       DEF: () => { }
@@ -137,19 +148,31 @@ export class RuleParser {
     let postfix = value.sep ? 'SEP' : null
     let fun = postfix ? [prefix, postfix].join('_') : prefix
 
-    rule.SEP = value.sep || value.separator
-    let def = value.rule || value.def
-    let definition = this.parse(def)
-    rule.DEF = definition
+    this.log('type', fun)
 
+    rule.SEP = value.sep || value.separator
+    this.log('separator', rule.SEP)
+
+    let def = value.rule || value.def
+    this.log('def:', def)
+    let definition = () => this.parse(def)
+    this.log('definition', definition)
+
+    rule.DEF = () => {
+      this.$.CONSUME(Identifier)
+    }
+
+    this.log('repeat rule:', fun, rule)
     return this.$[fun](rule)
   }
 
   or(alternatives) {
+    this.log('or', alternatives)
     return this.parseList(alternatives, { parent: 'or' })
   }
 
   option(value) {
+    this.log('option', value)
     let rule = (typeof value === 'string') ? this.findRule[value] : value
     if (typeof rule !== 'function') {
       throw new Error(`option must be function, was ${typeof rule}`)
@@ -158,21 +181,22 @@ export class RuleParser {
     this.$.OPTION(parsedRule)
   }
 
-  rule(name, rules) {
+  rule(name, rules, config) {
+    this.log('rule', name, rules)
     if (typeof name !== 'string') {
       throw new Error(`rule name must be a valid name (string), was ${name}`)
     }
-    return this.$.RULE(name, rules)
+    return this.$.RULE(name, rules, config)
   }
 
-  createRule(name: string, rules) {
-    let parsedRule = this.rule(name, this.parse(rules))
+  createRule(name: string, rules, options) {
+    let parsedRule = this.rule(name, this.parse(rules, options), options)
     this.register(name, parsedRule)
     return parsedRule
   }
 }
 
 export function rule(parser, name: string, rules, options?): Function {
-  let rule = new RuleParser(parser, options).createRule(name, rules)
+  let rule = new RuleParser(parser, options).createRule(name, rules, options)
   return rule
 }

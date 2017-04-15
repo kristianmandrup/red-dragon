@@ -1,4 +1,4 @@
-import { Token, Lexer } from 'chevrotain';
+import { Token } from 'chevrotain';
 export declare class Select extends Token {
     static PATTERN: RegExp;
 }
@@ -25,7 +25,7 @@ export declare class LessThan extends Token {
 }
 export declare class WhiteSpace extends Token {
     static PATTERN: RegExp;
-    static GROUP: string;
+    static GROUP: any;
 }
 export declare const allTokens: typeof Select[];
-export declare const SelectLexer: Lexer;
+export declare const SelectLexer: any;

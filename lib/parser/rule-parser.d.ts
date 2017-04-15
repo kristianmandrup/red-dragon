@@ -21,7 +21,7 @@ export declare class RuleParser {
     repeat(value: any): any;
     or(alternatives: any): () => void;
     option(value: any): void;
-    rule(name: any, rules: any): any;
-    createRule(name: string, rules: any): any;
+    rule(name: any, rules: any, config: any): any;
+    createRule(name: string, rules: any, options: any): any;
 }
 export declare function rule(parser: any, name: string, rules: any, options?: any): Function;
