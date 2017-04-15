@@ -26,12 +26,17 @@ export class SelectParser extends Parser {
   }
 }
 
-test('RuleParser', t => {
-  let text = 'SELECT'
+function createParser(text) {
   let lexingResult = SelectLexer.tokenize(text)
   let parser = new SelectParser(lexingResult);
-  let rp = new RuleParser(parser)
+  return new RuleParser(parser)
+}
 
+
+
+test('obj consume', t => {
+  let text = 'SELECT'
+  let rp = createParser(text)
   let config = {
     code: `() => {
       this.CONSUME(Select)
@@ -46,7 +51,17 @@ test('RuleParser', t => {
 })
 
 test('consume', t => {
-
+  let text = 'SELECT'
+  let rp = createParser(text)
+  let config = {
+    code: `() => {
+      this.CONSUME(Select)
+    }`
+  }
+  let selectRule = rp.createRule('selectRule', [Select], {})
+  // console.log('selectRule', selectRule)
+  selectRule()
+  t.pass()
 })
 
 test('subrule', t => {
