@@ -222,12 +222,13 @@ export class RuleParser {
   protected option(value): IResult {
     this.log('option', value)
     let _rule = (typeof value === 'string') ? this.findRule[value] : value
-    if (typeof _rule !== 'function') {
-      throw new Error(`option must be function, was ${typeof _rule}`)
+    let parsed = this.parse(_rule)
+    if (typeof parsed.rule !== 'function') {
+      throw new Error(`option must be function, was ${typeof parsed.rule}`)
     }
-    let parsedRule = this.parse(_rule)
-    let rule = () => this.$.OPTION(parsedRule)
-    let code = parsedRule.code
+
+    let rule = () => this.$.OPTION(parsed.rule)
+    let code = parsed.code
     return { rule, code }
   }
 
@@ -243,6 +244,7 @@ export class RuleParser {
   }
 
   public createRule(name: string, rules, options): Function {
+    options = options || {}
     let parsed = this.parse(rules, options)
     this.log('createRule: parsedRule', parsed.rule)
     options.code = options.code || parsed.code

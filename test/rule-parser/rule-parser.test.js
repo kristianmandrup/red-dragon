@@ -8,6 +8,7 @@ import {
 import {
   allTokens,
   Select,
+  Where,
   Comma,
   Identifier,
   SelectLexer
@@ -32,8 +33,6 @@ function createParser(text) {
   return new RuleParser(parser)
 }
 
-
-
 test('obj consume', t => {
   let text = 'SELECT'
   let rp = createParser(text)
@@ -50,7 +49,7 @@ test('obj consume', t => {
   t.pass()
 })
 
-test('consume', t => {
+test('consume token', t => {
   let text = 'SELECT'
   let rp = createParser(text)
   let config = {
@@ -58,22 +57,44 @@ test('consume', t => {
       this.CONSUME(Select)
     }`
   }
-  let selectRule = rp.createRule('selectRule', [Select], {})
+  let selectRule = rp.createRule('selectRule', [Select])
   // console.log('selectRule', selectRule)
   selectRule()
   t.pass()
 })
 
-test('subrule', t => {
-
+test('option obj', t => {
+  let text = 'SELECT WHERE'
+  let rp = createParser(text)
+  let config = {
+    code: `() => {
+      this.CONSUME(Select)
+    }`
+  }
+  let selectRule = rp.createRule('selectRule', [Select, {
+    option: {
+      consume: Where
+    }
+  }])
+  // console.log('selectRule', selectRule)
+  selectRule()
+  t.pass()
 })
 
-test('option', t => {
-
-})
-
-test('option', t => {
-
+test('option token', t => {
+  let text = 'SELECT WHERE'
+  let rp = createParser(text)
+  let config = {
+    code: `() => {
+      this.CONSUME(Select)
+    }`
+  }
+  let selectRule = rp.createRule('selectRule', [Select, {
+    option: Where
+  }])
+  // console.log('selectRule', selectRule)
+  selectRule()
+  t.pass()
 })
 
 test('alt', t => {
@@ -81,5 +102,9 @@ test('alt', t => {
 })
 
 test('or', t => {
+
+})
+
+test('subrule', t => {
 
 })
