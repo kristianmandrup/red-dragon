@@ -7,10 +7,16 @@ import {
   Identifier,
 } from '../lexer'
 
+export interface IResult {
+  rule: any
+  code: string
+}
+
 export class RuleParser {
   static registry = {}
   usedRules = {}
   _registry = {}
+  code = []
   logging: boolean
   $: any
 
@@ -21,7 +27,7 @@ export class RuleParser {
     this._registry = parser.registry || options.registry || RuleParser.registry
   }
 
-  parse(rule, options = {}) {
+  parse(rule, options = {}): IResult {
     this.log('parse', rule, options)
 
     if (Array.isArray(rule)) {
@@ -40,19 +46,22 @@ export class RuleParser {
       return this.subrule(rule)
     }
     if (typeof rule === 'function') {
-      return rule
+      return { rule, code: rule.name }
     }
     throw new Error(`Invalid rule(s) ${typeof rule}`)
   }
 
-  parseList(rules, options = {}) {
+  protected parseList(rules, options = {}): IResult {
     this.log('parseList', rules, options)
-    return () => {
-      rules.map(rule => this.parse(rule, options))
+    return {
+      rule: () => {
+        rules.map(rule => this.parse(rule, options).rule)
+      },
+      code: '[' + rules.map(rule => this.parse(rule, options).code).join(',') + ']'
     }
   }
 
-  parseObj(rule, options = {}) {
+  protected parseObj(rule, options = {}): IResult {
     this.log('parseObj', rule, options)
 
     function isRepeat(value) {
@@ -111,6 +120,10 @@ export class RuleParser {
     this.registry[name] = rule
   }
 
+  addCode(ruleCode) {
+    this.code.push(ruleCode)
+  }
+
   subrule(value, fun = 'SUBRULE') {
     this.log('subrule', value)
     let rule = (typeof value === 'string') ? this.findRule(value) : value
@@ -124,23 +137,29 @@ export class RuleParser {
       fun = 'SUBRULE2'
     }
     this.usedRules[fun] = true
+    this.addCode(`$.${fun}(` + rule + ')')
     return this.$[fun](rule)
   }
 
   // must be a Token
-  consume(value) {
+  protected consume(value): IResult {
     this.log('consume', value)
-    return this.$.CONSUME(value)
+    let code = '$.CONSUME(' + value + ')'
+    let rule = this.$.CONSUME(value)
+    return { rule, code }
   }
 
-  alt(value) {
+  protected alt(value): IResult {
     this.log('alt', value)
-    return { ALT: this.parse(value) }
+    let parsedRule = this.parse(value)
+    let code = '{ALT: ' + parsedRule.code + '}'
+    let rule = { ALT: parsedRule.rule }
+    return { rule, code }
   }
 
-  repeat(value) {
+  protected repeat(value): IResult {
     this.log('repeat', value)
-    let rule = {
+    let rep = {
       SEP: '',
       DEF: () => { }
     }
@@ -150,53 +169,64 @@ export class RuleParser {
 
     this.log('type', fun)
 
-    rule.SEP = value.sep || value.separator
-    this.log('separator', rule.SEP)
+    rep.SEP = value.sep || value.separator
+    this.log('separator', rep.SEP)
 
     let def = value.rule || value.def
     this.log('def:', def)
-    let definition = () => this.parse(def)
+    let definition = this.parse(def)
     this.log('definition', definition)
 
-    rule.DEF = () => {
-      this.$.CONSUME(Identifier)
+    rep.DEF = () => definition.rule
+    let codeRep = {
+      SEP: rep.SEP,
+      DEF: definition.code
     }
-
-    this.log('repeat rule:', fun, rule)
-    return this.$[fun](rule)
+    this.log('repeat rule:', fun, rep)
+    let rule = this.$[fun](rep)
+    let code = (`$.${fun}(` + codeRep + ')')
+    return { rule, code }
   }
 
-  or(alternatives) {
+  protected or(alternatives): IResult {
     this.log('or', alternatives)
-    return this.parseList(alternatives, { parent: 'or' })
+    let parsed = this.parseList(alternatives, { parent: 'or' })
+    let code = '$.OR([' + parsed.code + '])'
+    let rule = this.$.OR(parsed.rule)
+    return { rule, code }
   }
 
-  option(value) {
+  protected option(value): IResult {
     this.log('option', value)
-    let rule = (typeof value === 'string') ? this.findRule[value] : value
-    if (typeof rule !== 'function') {
-      throw new Error(`option must be function, was ${typeof rule}`)
+    let _rule = (typeof value === 'string') ? this.findRule[value] : value
+    if (typeof _rule !== 'function') {
+      throw new Error(`option must be function, was ${typeof _rule}`)
     }
-    let parsedRule = this.parse(rule)
-    this.$.OPTION(parsedRule)
+    let parsedRule = this.parse(_rule)
+    let rule = this.$.OPTION(parsedRule)
+    let code = parsedRule.code
+    return { rule, code }
   }
 
-  rule(name, rules, config) {
+  protected rule(name, rules, config): IResult {
     this.log('rule', name, rules)
     if (typeof name !== 'string') {
       throw new Error(`rule name must be a valid name (string), was ${name}`)
     }
-    return this.$.RULE(name, rules, config)
+    let rule = this.$.RULE(name, rules.rule, config)
+    let code = 'this.$.RULE(' + rules.code + ')'
+    return { rule, code }
   }
 
-  createRule(name: string, rules, options) {
-    let parsedRule = this.rule(name, this.parse(rules, options), options)
+  public createRule(name: string, rules, options): Function {
+    let parsed = this.parse(rules, options)
+    options.code = options.code || parsed.code
+    let parsedRule = this.rule(name, parsed.rule, options)
     this.register(name, parsedRule)
-    return parsedRule
+    return parsedRule.rule
   }
 }
 
 export function rule(parser, name: string, rules, options?): Function {
-  let rule = new RuleParser(parser, options).createRule(name, rules, options)
-  return rule
+  return new RuleParser(parser, options).createRule(name, rules, options)
 }

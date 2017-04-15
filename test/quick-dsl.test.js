@@ -74,9 +74,10 @@ export class SelectParser extends Parser {
         sep: Comma,
         def: Identifier
       }
-    ], {
-      code: selectClauseStr
-    })
+    ])
+    // ], {
+    //   code: selectClauseStr
+    // })
 
     this.quickSelectStatement = rule(this, 'selectStatement', [
       'selectClause'
