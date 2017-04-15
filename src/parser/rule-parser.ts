@@ -12,15 +12,24 @@ export interface IResult {
   code: string
 }
 
+function codeOf(value) {
+  return typeof value === 'function' ? value.name : new String(value)
+}
+
 export class RuleParser {
   static registry = {}
   usedRules = {}
   _registry = {}
   code = []
+  public codeStr: string
   logging: boolean
   $: any
 
-  constructor(parser, options = { logging: true, registry: null }) {
+  constructor(parser, options = { logging: false, registry: null }) {
+    if (!(parser instanceof Parser)) {
+      console.error('parser', parser)
+      throw new Error('RuleParser must be created with a Parser instance')
+    }
     this.$ = parser
     this.usedRules = {}
     this.logging = options.logging
@@ -54,12 +63,21 @@ export class RuleParser {
   protected parseList(rules, options = {}): IResult {
     this.log('parseList', rules, options)
     let parsedRules = rules.map(rule => this.parse(rule, options))
-    return {
-      rule: () => {
-        parsedRules.map(pr => pr.rule)
-      },
-      code: '() => {' + parsedRules.map(pr => pr.code).join('\n') + '}'
+    let codeStmts = parsedRules.map(pr => pr.code).join('\n')
+
+    this.log('parsedRules', parsedRules)
+    this.log('codeStmts', codeStmts)
+    let rule = () => {
+      parsedRules.map(pr => pr.rule())
     }
+    this.log('rule', rule)
+    let code = '() => {\n' + codeStmts + '\n}\n'
+    let result = {
+      rule,
+      code
+    }
+    this.log('parsedList', result)
+    return result
   }
 
   protected parseObj(rule, options = {}): IResult {
@@ -127,9 +145,9 @@ export class RuleParser {
 
   subrule(value, fun = 'SUBRULE') {
     this.log('subrule', value)
-    let rule = (typeof value === 'string') ? this.findRule(value) : value
-    if (typeof rule !== 'function') {
-      console.warn('Not yet registered, evaluate later...', rule, value, this.findRule(value), Object.keys(this.registry))
+    let _rule = (typeof value === 'string') ? this.findRule(value) : value
+    if (typeof _rule !== 'function') {
+      console.warn('Not yet registered, evaluate later...', _rule, value, this.findRule(value), Object.keys(this.registry))
       // throw new Error(`subrule must be function, was ${typeof rule}`)
     }
     // auto-detect reuse of subrule!
@@ -138,16 +156,20 @@ export class RuleParser {
       fun = 'SUBRULE2'
     }
     this.usedRules[fun] = true
-    this.addCode(`$.${fun}(` + rule + ')')
-    return this.$[fun](rule)
+    let code = `$.${fun}(` + _rule + ')'
+    let rule = () => this.$[fun](rule)
+    return { rule, code }
   }
 
   // must be a Token
   protected consume(value): IResult {
     this.log('consume', value)
-    let code = '$.CONSUME(' + value + ')'
-    let rule = this.$.CONSUME(value)
-    return { rule, code }
+    let code = '$.CONSUME(' + codeOf(value) + ')'
+    let $ = this.$
+    let rule = () => $.CONSUME(value).bind($)
+    let result = { rule, code }
+    this.log('consumed', result)
+    return result
   }
 
   protected alt(value): IResult {
@@ -193,7 +215,7 @@ export class RuleParser {
     this.log('or', alternatives)
     let parsed = this.parseList(alternatives, { parent: 'or' })
     let code = '$.OR([' + parsed.code + '])'
-    let rule = this.$.OR(parsed.rule)
+    let rule = () => this.$.OR(parsed.rule)
     return { rule, code }
   }
 
@@ -204,27 +226,32 @@ export class RuleParser {
       throw new Error(`option must be function, was ${typeof _rule}`)
     }
     let parsedRule = this.parse(_rule)
-    let rule = this.$.OPTION(parsedRule)
+    let rule = () => this.$.OPTION(parsedRule)
     let code = parsedRule.code
     return { rule, code }
   }
 
-  protected rule(name, rules, config): IResult {
+  protected rule(name, rules, config): Function {
     this.log('rule', name, rules)
     if (typeof name !== 'string') {
       throw new Error(`rule name must be a valid name (string), was ${name}`)
     }
-    let rule = this.$.RULE(name, rules.rule, config)
-    let code = 'this.$.RULE(' + rules.code + ')'
-    return { rule, code }
+    let $ = this.$
+    let rule = () => $.RULE(name, rules.rule, config).bind($)
+    // let code = 'this.$.RULE(' + rules.code + ')'
+    return rule
   }
 
   public createRule(name: string, rules, options): Function {
     let parsed = this.parse(rules, options)
+    this.log('createRule: parsedRule', parsed.rule)
     options.code = options.code || parsed.code
+    this.codeStr = parsed.code
+    this.log('createRule: parsedCode', parsed.code)
     let parsedRule = this.rule(name, parsed.rule, options)
+    this.log('createRule: parsedRule', parsedRule)
     this.register(name, parsedRule)
-    return parsedRule.rule
+    return parsedRule
   }
 }
 

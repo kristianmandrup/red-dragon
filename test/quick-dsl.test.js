@@ -17,6 +17,10 @@ import {
   rule
 } from '../lib/parser/rule-parser'
 
+let selectStr = `() => {
+  this.CONSUME(Select)
+}`
+
 let selectClauseStr = `() => {
     this.CONSUME(Select)
     this.AT_LEAST_ONE_SEP({
@@ -32,9 +36,28 @@ export class SelectParser extends Parser {
   constructor(input) {
     super(input, allTokens)
     // must be called at the end of the constructor!
+    this.smallMap()
     // this.normal()
-    this.quick()
+    // this.quick()
     Parser.performSelfAnalysis(this)
+  }
+
+  small() {
+    this.statement = this.RULE("selectClause", () => {
+      this.CONSUME(Select)
+    }, {
+      code: selectStr
+    })
+  }
+
+  smallMap() {
+    this.statement = this.RULE("selectClause", () => {
+      [0].map(n => {
+        this.CONSUME(Select)
+      })
+    }, {
+      code: selectStr
+    })
   }
 
   normal() {
@@ -89,10 +112,18 @@ export class SelectParser extends Parser {
   }
 }
 
-test('parser', t => {
-  let text = "SELECT column1 FROM table2"
+test('small', t => {
+  let text = "SELECT"
   let lexingResult = SelectLexer.tokenize(text)
   let parser = new SelectParser(lexingResult.tokens);
-  parser.selectStatement()
+  parser.statement()
   t.pass()
 })
+
+// test('parser', t => {
+//   let text = "SELECT column1 FROM table2"
+//   let lexingResult = SelectLexer.tokenize(text)
+//   let parser = new SelectParser(lexingResult.tokens);
+//   parser.selectStatement()
+//   t.pass()
+// })
