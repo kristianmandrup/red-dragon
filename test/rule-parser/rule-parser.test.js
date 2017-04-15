@@ -9,6 +9,7 @@ import {
   allTokens,
   Select,
   Where,
+  From,
   Comma,
   Identifier,
   SelectLexer
@@ -41,9 +42,9 @@ test('obj consume', t => {
       this.CONSUME(Select)
     }`
   }
-  let selectRule = rp.createRule('selectRule', [{
+  let selectRule = rp.createRule('consumeObjRule', [{
     consume: Select
-  }], {})
+  }])
   // console.log('selectRule', selectRule)
   selectRule()
   t.pass()
@@ -52,12 +53,7 @@ test('obj consume', t => {
 test('consume token', t => {
   let text = 'SELECT'
   let rp = createParser(text)
-  let config = {
-    code: `() => {
-      this.CONSUME(Select)
-    }`
-  }
-  let selectRule = rp.createRule('selectRule', [Select])
+  let selectRule = rp.createRule('consumeTokenRule', [Select])
   // console.log('selectRule', selectRule)
   selectRule()
   t.pass()
@@ -66,12 +62,7 @@ test('consume token', t => {
 test('option obj', t => {
   let text = 'SELECT WHERE'
   let rp = createParser(text)
-  let config = {
-    code: `() => {
-      this.CONSUME(Select)
-    }`
-  }
-  let selectRule = rp.createRule('selectRule', [Select, {
+  let selectRule = rp.createRule('optionObjRule', [Select, {
     option: {
       consume: Where
     }
@@ -84,12 +75,7 @@ test('option obj', t => {
 test('option token', t => {
   let text = 'SELECT WHERE'
   let rp = createParser(text)
-  let config = {
-    code: `() => {
-      this.CONSUME(Select)
-    }`
-  }
-  let selectRule = rp.createRule('selectRule', [Select, {
+  let selectRule = rp.createRule('optionTokenRule', [Select, {
     option: Where
   }])
   // console.log('selectRule', selectRule)
@@ -97,14 +83,49 @@ test('option token', t => {
   t.pass()
 })
 
-test('alt', t => {
-
-})
-
 test('or', t => {
-
+  let text = 'SELECT WHERE'
+  let rp = createParser(text)
+  let selectRule = rp.createRule('orRule', [Select, {
+    or: [
+      From,
+      Where
+    ]
+  }])
+  // console.log('selectRule', selectRule)
+  selectRule()
+  t.pass()
 })
 
-test('subrule', t => {
+test('subrule by name', t => {
+  let text = 'SELECT WHERE ,'
+  let rp = createParser(text)
+  let commaRule = rp.createRule('commaRule', [Comma])
+  let selectRule = rp.createRule('orRule', [
+    Select,
+    'commaRule',
+    // commaRule,
+    {
+      or: [From, Where]
+    }
+  ])
+  // console.log('selectRule', selectRule)
+  selectRule()
+  t.pass()
+})
 
+test('subrule function', t => {
+  let text = 'SELECT WHERE ,'
+  let rp = createParser(text)
+  let commaRule = rp.createRule('commaRule', [Comma])
+  let selectRule = rp.createRule('orRule', [
+    Select,
+    commaRule,
+    {
+      or: [From, Where]
+    }
+  ])
+  // console.log('selectRule', selectRule)
+  selectRule()
+  t.pass()
 })
