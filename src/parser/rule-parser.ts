@@ -5,13 +5,15 @@ import {
 export class RuleParser {
   static registry = {}
   usedRules = {}
+  _registry = {}
   logging: boolean
   $: any
 
-  constructor(parser, options = { logging: true }) {
+  constructor(parser, options = { logging: true, registry: null }) {
     this.$ = parser
     this.usedRules = {}
     this.logging = options.logging
+    this._registry = parser.registry || options.registry || RuleParser.registry
   }
 
   parse(rule) {
@@ -67,7 +69,7 @@ export class RuleParser {
   }
 
   get registry() {
-    return RuleParser.registry
+    return this._registry
   }
 
   register(name, rule) {

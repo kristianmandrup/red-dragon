@@ -1,10 +1,12 @@
 export declare class RuleParser {
     static registry: {};
     usedRules: {};
+    _registry: {};
     logging: boolean;
     $: any;
     constructor(parser: any, options?: {
         logging: boolean;
+        registry: any;
     });
     parse(rule: any): any;
     parseList(rules: any): () => void;

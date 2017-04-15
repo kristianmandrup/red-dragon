@@ -41,6 +41,7 @@ import {
 import { rule } from './rule-parser'
 
 export class SelectParser extends Parser {
+    registry = {}
 
     constructor(input: Token[]) {
         super(input, allTokens)

@@ -1,5 +1,6 @@
 import { Token, Parser } from 'chevrotain';
 export declare class SelectParser extends Parser {
+    registry: {};
     constructor(input: Token[]);
     selectClause: Function;
     selectStatement: Function;
