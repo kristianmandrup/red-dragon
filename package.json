@@ -17,11 +17,10 @@
     "url": "https://github.com/kristianmandrup/red-dragon"
   },
   "keywords": [
-    "gun",
-    "chain",
+    "chevrotain",
     "dsl",
-    "api",
-    "extension"
+    "rules",
+    "api"
   ],
   "author": "Kristian Mandrup <kmandrup@gmail.com>",
   "license": "MIT",
