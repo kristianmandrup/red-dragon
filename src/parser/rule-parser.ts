@@ -3,10 +3,6 @@ import {
   Token
 } from 'chevrotain'
 
-import {
-  Identifier,
-} from '../lexer'
-
 export interface IResult {
   rule: any
   code: string
@@ -239,7 +235,6 @@ export class RuleParser {
     }
     let $ = this.$
     let rule = () => $.RULE(name, rules.rule, config).bind($)
-    // let code = 'this.$.RULE(' + rules.code + ')'
     return rule
   }
 
@@ -251,7 +246,7 @@ export class RuleParser {
     this.codeStr = parsed.code
     this.log('createRule: parsedCode', parsed.code)
     let parsedRule = this.rule(name, parsed.rule, options)
-    this.log('createRule: parsedRule', parsedRule)
+    this.log('createRule: rule', parsedRule)
     this.register(name, parsedRule)
     return parsedRule
   }

@@ -18,7 +18,7 @@ import {
 import {
   rule,
   RuleParser
-} from '../../lib/parser/rule-parser'
+} from 'chevrotain-rule-dsl'
 
 export class SelectParser extends Parser {
   registry = {}
@@ -28,11 +28,11 @@ export class SelectParser extends Parser {
   }
 }
 
-function createParser(text) {
+function createParser(text, options) {
   let lexingResult = SelectLexer.tokenize(text)
-  let parser = new SelectParser(lexingResult);
+  let parser = new SelectParser(lexingResult)
   return {
-    rp: new RuleParser(parser),
+    rp: new RuleParser(parser, options),
     parser
   }
 }
@@ -121,8 +121,8 @@ test('or', t => {
 
   let selectRule = rp.createRule('orRule', [Select, {
     or: [
-      From,
-      Where
+      'From',
+      'Where'
     ]
   }])
   // console.log('selectRule', selectRule)
@@ -130,6 +130,25 @@ test('or', t => {
   check(parser)
   t.pass()
 })
+
+test('or: string split', t => {
+  let text = 'SELECT WHERE'
+  let {
+    rp,
+    parser
+  } = createParser(text)
+
+  let selectRule = rp.createRule('orRule', [Select, {
+    or: 'From Where'
+  }], {
+    logging: true
+  })
+  // console.log('selectRule', selectRule)
+  selectRule()
+  check(parser)
+  t.pass()
+})
+
 
 test('subrule by name', t => {
   let text = 'SELECT WHERE ,'
@@ -140,11 +159,10 @@ test('subrule by name', t => {
 
   let commaRule = rp.createRule('commaRule', [Comma])
   let selectRule = rp.createRule('orRule', [
-    Select,
+    'Select',
     'commaRule',
-    // commaRule,
     {
-      or: [From, Where]
+      or: ['From', 'Where']
     }
   ])
   // console.log('selectRule', selectRule)
@@ -170,6 +188,24 @@ test('subrule function', t => {
   ])
   // console.log('selectRule', selectRule)
   selectRule()
+  check(parser)
+  t.pass()
+})
+
+test('split text', t => {
+  let text = 'SELECT WHERE ,'
+  let {
+    rp,
+    parser
+  } = createParser(text)
+
+  let commaRule = rp.createRule('commaRule', [Comma])
+  let splitRule = rp.createRule('orRule', [
+    'Select commaRule',
+    'From or Where'
+  ])
+  // console.log('selectRule', selectRule)
+  splitRule()
   check(parser)
   t.pass()
 })
