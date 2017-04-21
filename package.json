@@ -25,7 +25,8 @@
   "author": "Kristian Mandrup <kmandrup@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "chevrotain": "^0.27.3"
+    "chevrotain": "^0.27.3",
+    "chevrotain-rule-dsl": "^1.0.0"
   },
   "devDependencies": {
     "ava": "^0.18.2",
